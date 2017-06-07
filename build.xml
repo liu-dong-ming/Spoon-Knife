@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="wx_client" default="main" basedir=".">
+<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+  <property environment="env"/>
+  <property name="RAW_BUILD_NUMBER" value="${env.BUILD_NUMBER}"/>
+  <script language="javascript"><![CDATA[
+    var buildNum = parseInt(project.getProperty("RAW_BUILD_NUMBER"))
+    var minorBuildNumber = buildNum % 100;
+    var majorBuildNumber = (Math.floor(buildNum / 100)) % 100;
+    var uberBuildNumber = (Math.floor(buildNum / 10000)) % 100;
+    project.setProperty("minorBuildNumber", minorBuildNumber);
+    project.setProperty("majorBuildNumber", majorBuildNumber);
+    project.setProperty("uberBuildNumber", uberBuildNumber);
+  ]]></script>
+  <property name="VERSION_STRING" value="${uberBuildNumber}.${majorBuildNumber}.${minorBuildNumber}"/>
+  <property file="settings.properties"/>  
+  <property name="dev.dir.absolute" location="${dev.dir}"/>
+  <tstamp>
+    <format property="TODAY_STAMP" pattern="yyyy_MM_dd" locale="en,US"/>
+  </tstamp>
+  <tstamp>
+    <format property="MONTH_STAMP" pattern="M" locale="en,US"/>
+  </tstamp>
+  <property name="VERSION_NUM" value="${uberBuildNumber}.${majorBuildNumber}.${minorBuildNumber}"/>
+  <property name="VERSION_STRING" value="honorbound_${VERSION_NUM}"/>
+  
+  <target name="RunDevTest">
+    <echo message="sh RunDevTest.sh"/>
+	<exec executable="/bin/sh">
+        <arg line="RunDevTest.sh" />
+    </exec>
+	
+<!--	<echo message="mkdir ${ios.ftp.folder}${bVersion}#${RAW_BUILD_NUMBER}"/>
+	<mkdir dir="${ios.ftp.folder} ${bVersion}#${RAW_BUILD_NUMBER}"/>
+-->
+	<echo message="empty/Build/Developer/IOS/empty.ipa to new folder"/>
+	<copy file="empty/Build/Developer/IOS/empty.ipa" todir="${ios.ftp.folder}${bVersion}#${RAW_BUILD_NUMBER}"/>
+
+  </target>
+  
+  <target name="BuildDevM1">
+<!--    <echo message="sh RunDevM1.sh"/>
+	<exec executable="/bin/sh">
+        <arg line="RunDevM1.sh" />
+    </exec>
+	
+	<echo message="mkdir ${ios.ftp.folder}${bVersion}#${RAW_BUILD_NUMBER}"/>
+	<mkdir dir="${ios.ftp.folder} ${bVersion}#${RAW_BUILD_NUMBER}"/>
+
+	<echo message="empty/Build/Developer/IOS/empty.ipa to new folder"/>
+	<copy file="empty/Build/Developer/IOS/empty.ipa" todir="${ios.ftp.folder}${bVersion}#${RAW_BUILD_NUMBER}"/>
+-->
+  </target>
+  
+  <target name="testMessage">
+
+<if>
+ <equals arg1="${branch}" arg2="M1" />
+ <then>
+   <echo message="The value of property branch is 'M1'" />
+ </then>
+
+ <elseif>
+  <equals arg1="${branch}" arg2="M2" />
+  <then>
+   <echo message="The value of property branch is 'M2'" />
+  </then>
+ </elseif>
+
+
+ <else>
+   <echo message="The value of property branch is not 'M1' or 'M2'" />
+ </else>
+</if>
+	
+
+
+  </target>
+  
+  <target name="RunAdHocTest">
+    <echo message="sh RunAdHocTest.sh"/>
+	<exec executable="/bin/sh">
+        <arg line="RunAdHocTest.sh" />
+    </exec>
+  </target>
+  
+  <target name="main" depends="ios, android, zipDsym" />
+  
+  <target name="android" depends="compile-android" />
+  
+  <target name="ios" depends="compile-ios" />
+  
+  <target name="clean">
+    <echo message="Cleaning Build Space"/>
+    <delete dir="${build.dir}"/>
+    <mkdir dir="${build.dir}"/>
+  </target>
+  
+  <target name="testmac">
+	<echo message="${pwd}" />
+    <echo message="-projectPath ${dev.dir.absolute}"/>
+  </target>
+  
+  <target name="compile-ios" depends="clean">
+    <!--
+    <echo message="Compiling unity project for version ${VERSION_STRING}"/>
+    -->
+    
+    <echo message="Building unity"/>
+    <echo message="${unity.bin.mac} -projectPath ${dev.dir.absolute} -executeMethod CqmAssetbundleBuilderEdit.BuildIOS -batchmode -quit"/>
+    <exec executable="${unity.bin.mac}" failonerror="false">
+      <arg line="-projectPath ${dev.dir.absolute}"/>
+      <arg line="-executeMethod CqmAssetbundleBuilderEdit.BuildIOS"/>
+      <arg line="-batchmode"/>
+      <arg line="-quit"/>
+    </exec>
+	<!--
+    <replace file="${build.dir}/iPhone/Info.plist" preservelastmodified="true">
+      <replacefilter token="999.999.999" value="${VERSION_NUM}" />
+    </replace>
+	-->
+    
+    <echo message="Building security"/>
+    <exec executable="${security.bin}" failonerror="true">
+      <arg value="unlock-keychain"/>
+      <arg line="-p ${keychain.password}"/>
+    </exec>
+    
+    
+    <echo message="Building xcodeproj"/>
+    <echo message="Building ${build.dir}/Unity-iPhone.xcodeproj/ Sym Root ${build.dir}/"/>
+    <exec executable="${xcode.bin}" failonerror="true">
+      <arg line="-project ${build.dir}/Unity-iPhone.xcodeproj/"/>
+      <arg line="PROVISIONING_PROFILE=${provisioning.guid}"/>
+      <arg line="-sdk iphoneos"/>
+      <arg line='CODE_SIGN_IDENTITY="${codesign.identity}"'/>
+      <arg line='GCC_GENERATE_DEBUGGING_SYMBOLS=YES'/>
+      <arg line='DEBUG_INFORMATION_FORMAT=dwarf-with-dsym'/>
+      <arg line='DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT=YES'/>
+      <arg line='DEBUGGING_SYMBOLS=YES'/>
+      
+      <arg line="-configuration Release"/>
+    </exec>
+    
+    <echo message="Building xcrun"/>
+    <exec executable="${xcrun.bin}" failonerror="true">
+      <arg line="-sdk iphoneos"/>
+      <arg line="PackageApplication"/>
+      <arg line="-v ${build.dir}/build/Release-iphoneos/${APP_NAME}.app"/>
+      <arg line="-o ${dev.dir.absolute}/Build/${APP_NAME}.ipa"/>
+    </exec>
+    
+	<!--
+    <copy file="${build.dir}/iPhone/build/${APP_NAME}.ipa" tofile="${ios.build.deploy.folder}/${VERSION_STRING}.ipa"/>
+    -->
+    
+  </target>
+  
+  <target name="compile-android">
+    
+    <echo message="Compiling unity project for android version ${VERSION_STRING}"/>
+    
+    
+    <echo message="${unity.bin} -projectPath ${dev.dir} -executeMethod CqmAssetbundleBuilderEdit.BatchBuild -batchmode -quit"/>
+    <exec executable="${unity.bin}" failonerror="false">
+      <arg line="-projectPath ${dev.dir.absolute}"/>
+      <arg line="-executeMethod CqmAssetbundleBuilderEdit.BuildAndroid"/>
+      <arg line="-batchmode"/>
+      <arg line="-quit"/>
+    </exec>
+  </target>
+  
+  
+  <target name="zipDsym">
+    <echo message="Zipping dSym"/>
+    <exec executable="zip" dir="${build.dir}/iPhone/build" failonerror="true">
+      <arg value="-r"/>
+      <arg value="${APP_NAME}.app.dSYM.zip"/>
+      <arg value="${APP_NAME}.app.dSYM"/>
+    </exec>
+  </target>
+  
+</project>
