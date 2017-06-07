@@ -1,0 +1,2 @@
+cd /Users/Shared/Epic\ Games/UE_4.15/Engine/
+sh Build/BatchFiles/RunUAT.command -ScriptsForProject=/Users/admin/.jenkins/workspace/Project-M1-IOS-Developer/empty/empty.uproject BuildCookRun -nocompile -nocompileeditor -installed -nop4 -project=/Users/admin/.jenkins/workspace/Project-M1-IOS-Developer/empty/empty.uproject -cook -stage -archive -archivedirectory=/Users/admin/.jenkins/workspace/Project-M1-IOS-Developer/empty/Build/Developer -package -clientconfig=Development -ue4exe=UE4Editor -pak -prereqs -nodebuginfo -targetplatform=IOS -CrashReporter -utf8output

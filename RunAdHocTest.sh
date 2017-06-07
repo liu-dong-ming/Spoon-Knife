@@ -1,0 +1,2 @@
+cd /Users/Shared/Epic\ Games/UE_4.15/Engine/
+sh Build/BatchFiles/RunUAT.command -ScriptsForProject=/Users/admin/Documents/Unreal\ Projects/empty/empty.uproject BuildCookRun -nocompile -nocompileeditor -installed -nop4 -project=/Users/admin/Documents/Unreal\ Projects/empty/empty.uproject -cook -stage -archive -archivedirectory=/Users/admin/Documents/Unreal\ Projects/build/Shipping -package -clientconfig=Shipping -ue4exe=UE4Editor -pak -prereqs -nodebuginfo -targetplatform=IOS -CrashReporter -utf8output
